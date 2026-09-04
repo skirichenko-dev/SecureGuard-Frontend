@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SecureGuard | Password Generator</title>
+    <style>
+        :root {
+            --bg-color: #0d1117;
+            --panel-bg: #161b22;
+            --text-main: #c9d1d9;
+            --accent: #2ea043;
+            --accent-hover: #3fb950;
+            --border: #30363d;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Courier New', Courier, monospace; }
+        body { background-color: var(--bg-color); color: var(--text-main); display: flex; justify-content: center; align-items: center; height: 100vh; }
+        .container { background-color: var(--panel-bg); padding: 30px; border-radius: 10px; border: 1px solid var(--border); width: 100%; max-width: 400px; box-shadow: 0 8px 24px rgba(0,0,0,0.5); }
+        h2 { text-align: center; margin-bottom: 20px; color: #fff; font-size: 1.5rem; }
+        .result-container { background-color: #010409; padding: 15px; border-radius: 6px; border: 1px solid var(--border); margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
+        #result { font-size: 1.2rem; word-break: break-all; color: var(--accent); }
+        .btn-copy { background: none; border: none; color: var(--text-main); cursor: pointer; font-size: 1.2rem; transition: color 0.2s; }
+        .btn-copy:hover { color: #fff; }
+        .settings .setting { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; font-size: 0.95rem; }
+        input[type="number"] { width: 60px; padding: 5px; background: #010409; color: #fff; border: 1px solid var(--border); border-radius: 4px; text-align: center; }
+        input[type="checkbox"] { accent-color: var(--accent); width: 16px; height: 16px; }
+        .btn-generate { width: 100%; padding: 12px; background-color: var(--accent); color: #fff; border: none; border-radius: 6px; font-size: 1rem; font-weight: bold; cursor: pointer; transition: background 0.2s; margin-top: 10px; }
+        .btn-generate:hover { background-color: var(--accent-hover); }
+        .strength-meter { margin-top: 20px; text-align: center; font-size: 0.85rem; }
+        .strength-bar { height: 6px; background: var(--border); border-radius: 3px; margin-top: 8px; overflow: hidden; }
+        .strength-fill { height: 100%; width: 0; transition: width 0.3s, background-color 0.3s; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>🛡️ SecureGuard</h2>
+        <div class="result-container">
+            <span id="result">P4$5W0rD!</span>
+            <button class="btn-copy" id="clipboard" title="Скопировать">📋</button>
+        </div>
+        <div class="settings">
+            <div class="setting">
+                <label>Длина пароля</label>
+                <input type="number" id="length" min="8" max="64" value="16">
+            </div>
+            <div class="setting">
+                <label>Заглавные буквы</label>
+                <input type="checkbox" id="uppercase" checked>
+            </div>
+            <div class="setting">
+                <label>Строчные буквы</label>
+                <input type="checkbox" id="lowercase" checked>
+            </div>
+            <div class="setting">
+                <label>Цифры</label>
+                <input type="checkbox" id="numbers" checked>
+            </div>
+            <div class="setting">
+                <label>Спецсимволы</label>
+                <input type="checkbox" id="symbols" checked>
+            </div>
+        </div>
+        <button class="btn-generate" id="generate">Сгенерировать</button>
+        <div class="strength-meter">
+            <span id="strength-text">Надежность: Средняя</span>
+            <div class="strength-bar"><div class="strength-fill" id="strength-fill"></div></div>
+        </div>
+    </div>
+
+    <script>
+        const resultEl = document.getElementById('result');
+        const lengthEl = document.getElementById('length');
+        const uppercaseEl = document.getElementById('uppercase');
+        const lowercaseEl = document.getElementById('lowercase');
+        const numbersEl = document.getElementById('numbers');
+        const symbolsEl = document.getElementById('symbols');
+        const generateEl = document.getElementById('generate');
+        const clipboardEl = document.getElementById('clipboard');
+        const strengthText = document.getElementById('strength-text');
+        const strengthFill = document.getElementById('strength-fill');
+
+        const randomFunc = {
+            lower: () => String.fromCharCode(Math.floor(Math.random() * 26) + 97),
+            upper: () => String.fromCharCode(Math.floor(Math.random() * 26) + 65),
+            number: () => String.fromCharCode(Math.floor(Math.random() * 10) + 48),
+            symbol: () => {
+                const symbols = '!@#$%^&*(){}[]=<>/,.';
+                return symbols[Math.floor(Math.random() * symbols.length)];
+            }
+        };
+
+        generateEl.addEventListener('click', () => {
+            const length = +lengthEl.value;
+            const hasLower = lowercaseEl.checked;
+            const hasUpper = uppercaseEl.checked;
+            const hasNumber = numbersEl.checked;
+            const hasSymbol = symbolsEl.checked;
+            resultEl.innerText = generatePassword(hasLower, hasUpper, hasNumber, hasSymbol, length);
+            updateStrength(length, hasLower + hasUpper + hasNumber + hasSymbol);
+        });
+
+        clipboardEl.addEventListener('click', () => {
+            if(!resultEl.innerText) return;
+            navigator.clipboard.writeText(resultEl.innerText);
+            clipboardEl.innerText = '✅';
+            setTimeout(() => clipboardEl.innerText = '📋', 2000);
+        });
+
+        function generatePassword(lower, upper, number, symbol, length) {
+            let generatedPassword = '';
+            const typesCount = lower + upper + number + symbol;
+            const typesArr = [{lower}, {upper}, {number}, {symbol}].filter(item => Object.values(item)[0]);
+            if(typesCount === 0) return '';
+            for(let i = 0; i < length; i += typesCount) {
+                typesArr.forEach(type => {
+                    const funcName = Object.keys(type)[0];
+                    generatedPassword += randomFunc[funcName]();
+                });
+            }
+            return generatedPassword.slice(0, length).split('').sort(() => 0.5 - Math.random()).join('');
+        }
+
+        function updateStrength(length, types) {
+            let strength = 0;
+            if(length >= 12) strength += 1;
+            if(length >= 16) strength += 1;
+            strength += types - 1;
+            
+            if(strength <= 1) {
+                strengthText.innerText = 'Надежность: Слабая';
+                strengthFill.style.width = '33%';
+                strengthFill.style.backgroundColor = '#f85149';
+            } else if(strength === 2 || strength === 3) {
+                strengthText.innerText = 'Надежность: Нормальная';
+                strengthFill.style.width = '66%';
+                strengthFill.style.backgroundColor = '#d29922';
+            } else {
+                strengthText.innerText = 'Надежность: Высокая';
+                strengthFill.style.width = '100%';
+                strengthFill.style.backgroundColor = '#2ea043';
+            }
+        }
+        
+        generateEl.click();
+    </script>
+</body>
+</html>
