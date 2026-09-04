@@ -9,5 +9,5 @@
 * Мгновенное копирование в буфер обмена одним кликом.
 
 ### 🛠 Стек технологий
-* **Frontend:** HTML5, CSS3, Vanilla JavaScript (без сторонних библиотек).
+* **Frontend:** HTML5, CSS3, Vanilla JavaScript.
 * **UI/UX:** Адаптивная верстка, Dark Theme в стиле GitHub.
